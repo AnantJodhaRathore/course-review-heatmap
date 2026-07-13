@@ -1,49 +1,38 @@
-import { BarChart3, Github, GraduationCap } from 'lucide-react';
+import { BarChart3, Bookmark, GitCompareArrows, GraduationCap, LayoutDashboard, Menu, Search, X } from 'lucide-react';
+import { useState } from 'react';
 
-export function Header() {
+export type Screen = 'overview' | 'explore' | 'compare' | 'saved' | 'review';
+
+type HeaderProps = { screen: Screen; onNavigate: (screen: Screen) => void; savedCount: number; compareCount: number };
+
+const links: Array<{ id: Screen; label: string; icon: typeof Search }> = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'explore', label: 'Explore', icon: Search },
+  { id: 'compare', label: 'Compare', icon: GitCompareArrows },
+  { id: 'saved', label: 'Saved', icon: Bookmark }
+];
+
+export function Header({ screen, onNavigate, savedCount, compareCount }: HeaderProps) {
+  const [open, setOpen] = useState(false);
+  const go = (next: Screen) => { onNavigate(next); setOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   return (
-    <header className="hero">
-      <nav className="nav">
-        <div className="brand">
-          <img src="/logo.svg" alt="Course Review Heatmap logo" />
-          <span>CourseHeat</span>
+    <header className="app-header">
+      <nav className="app-nav">
+        <button className="brand brand-button" onClick={() => go('overview')}>
+          <span className="logo-mark"><GraduationCap size={22} /></span><span>Course<span>Heat</span></span>
+        </button>
+        <div className={`nav-links app-nav-links ${open ? 'open' : ''}`}>
+          {links.map(({ id, label, icon: Icon }) => (
+            <button key={id} className={screen === id ? 'active' : ''} onClick={() => go(id)}>
+              <Icon size={17} />{label}
+              {id === 'saved' && savedCount > 0 && <em>{savedCount}</em>}
+              {id === 'compare' && compareCount > 0 && <em>{compareCount}</em>}
+            </button>
+          ))}
         </div>
-        <div className="nav-links">
-          <a href="#heatmap">Heatmap</a>
-          <a href="#compare">Compare</a>
-          <a href="#reviews">Reviews</a>
-          <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub">
-            <Github size={18} />
-          </a>
-        </div>
+        <button className="button primary compact nav-cta" onClick={() => go('review')}><BarChart3 size={17} /> Write a review</button>
+        <button className="menu-button" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
       </nav>
-
-      <section className="hero-content">
-        <div>
-          <p className="eyebrow"><GraduationCap size={16} /> Student-built course intelligence</p>
-          <h1>Pick better classes with professor ratings, grade data, and workload heatmaps.</h1>
-          <p className="hero-copy">
-            A recruiter-ready React project that visualizes course reviews by semester, professor, attendance policy,
-            difficulty, grade distribution, and weekly workload.
-          </p>
-          <div className="hero-actions">
-            <a className="button primary" href="#heatmap">Explore heatmap</a>
-            <a className="button ghost" href="#reviews">Add a review</a>
-          </div>
-        </div>
-
-        <div className="hero-card" aria-label="Project highlights">
-          <BarChart3 size={38} />
-          <h2>Full dashboard demo</h2>
-          <p>Search, filter, compare professors, view charts, add reviews, and optionally connect Supabase.</p>
-          <div className="stack-tags">
-            <span>React</span>
-            <span>Supabase-ready</span>
-            <span>Chart.js</span>
-            <span>TypeScript</span>
-          </div>
-        </div>
-      </section>
     </header>
   );
 }

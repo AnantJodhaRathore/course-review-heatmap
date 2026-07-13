@@ -1,90 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CourseDetail } from './components/CourseDetail';
-import { CourseTable } from './components/CourseTable';
-import { Filters } from './components/Filters';
-import { Footer } from './components/Footer';
-import { Header } from './components/Header';
-import { HeatmapGrid } from './components/HeatmapGrid';
-import { InsightsPanel } from './components/InsightsPanel';
-import { ReviewForm } from './components/ReviewForm';
-import { StatCards } from './components/StatCards';
-import { filterCourses, addReviewToCourse } from './lib/courseUtils';
-import { loadCourses, resetSavedCourses, saveCourses } from './lib/storage';
-import type { Course, FiltersState, NewReviewForm } from './types';
-
-const defaultFilters: FiltersState = {
-  search: '',
-  department: 'All',
-  professor: 'All',
-  semester: 'All',
-  metric: 'avgRating'
-};
-
-function App() {
-  const [courses, setCourses] = useState<Course[]>(() => loadCourses());
-  const [filters, setFilters] = useState<FiltersState>(defaultFilters);
-  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.id ?? '');
-
-  useEffect(() => {
-    saveCourses(courses);
-  }, [courses]);
-
-  const filteredCourses = useMemo(() => filterCourses(courses, filters), [courses, filters]);
-  const selectedCourse = courses.find((course) => course.id === selectedCourseId) ?? filteredCourses[0] ?? courses[0];
-
-  useEffect(() => {
-    if (filteredCourses.length && !filteredCourses.some((course) => course.id === selectedCourseId)) {
-      setSelectedCourseId(filteredCourses[0].id);
-    }
-  }, [filteredCourses, selectedCourseId]);
-
-  function selectCourse(course: Course) {
-    setSelectedCourseId(course.id);
-  }
-
-  function submitReview(form: NewReviewForm) {
-    setCourses((currentCourses) =>
-      currentCourses.map((course) => (course.id === selectedCourse.id ? addReviewToCourse(course, form) : course))
-    );
-  }
-
-  function resetDemo() {
-    const originalCourses = resetSavedCourses();
-    setCourses(originalCourses);
-    setFilters(defaultFilters);
-    setSelectedCourseId(originalCourses[0].id);
-  }
-
-  return (
-    <>
-      <Header />
-      <main className="page-shell">
-        <div className="top-actions">
-          <p>Use this as a portfolio project, then replace the sample dataset with your school’s public course catalog.</p>
-          <button className="button ghost compact" onClick={resetDemo}>Reset demo data</button>
-        </div>
-
-        <Filters courses={courses} filters={filters} onChange={setFilters} />
-        <StatCards courses={filteredCourses} />
-
-        <div className="dashboard-layout">
-          <div className="main-column">
-            <HeatmapGrid
-              courses={filteredCourses}
-              metric={filters.metric}
-              selectedCourseId={selectedCourse.id}
-              onSelectCourse={selectCourse}
-            />
-            <CourseTable courses={filteredCourses} selectedCourseId={selectedCourse.id} onSelectCourse={selectCourse} />
-            <InsightsPanel courses={filteredCourses} />
-            <ReviewForm selectedCourse={selectedCourse} onSubmit={submitReview} />
-          </div>
-          <CourseDetail course={selectedCourse} />
-        </div>
-      </main>
-      <Footer />
-    </>
-  );
+import { Bookmark, GitCompareArrows, RotateCcw } from 'lucide-react';
+import { CourseDetail } from './components/CourseDetail'; import { CourseTable } from './components/CourseTable'; import { Filters } from './components/Filters'; import { Footer } from './components/Footer';
+import { Header, type Screen } from './components/Header'; import { HeatmapGrid } from './components/HeatmapGrid'; import { InsightsPanel } from './components/InsightsPanel'; import { ReviewForm } from './components/ReviewForm'; import { StatCards } from './components/StatCards';
+import { OverviewScreen } from './components/OverviewScreen'; import { CompareScreen } from './components/CompareScreen'; import { SavedScreen } from './components/SavedScreen';
+import { filterCourses, addReviewToCourse } from './lib/courseUtils'; import { loadCourses, resetSavedCourses, saveCourses } from './lib/storage'; import type { Course, FiltersState, NewReviewForm } from './types';
+const defaultFilters: FiltersState = { search:'', department:'All', professor:'All', semester:'All', metric:'avgRating' };
+const loadIds=(key:string)=>{try{return JSON.parse(localStorage.getItem(key)||'[]') as string[]}catch{return []}};
+function App(){
+ const [courses,setCourses]=useState<Course[]>(()=>loadCourses()); const [filters,setFilters]=useState(defaultFilters); const [selectedCourseId,setSelectedCourseId]=useState(courses[0]?.id??''); const [screen,setScreen]=useState<Screen>('overview'); const [saved,setSaved]=useState<string[]>(()=>loadIds('courseheat-saved')); const [compare,setCompare]=useState<string[]>(()=>loadIds('courseheat-compare'));
+ useEffect(()=>saveCourses(courses),[courses]); useEffect(()=>localStorage.setItem('courseheat-saved',JSON.stringify(saved)),[saved]); useEffect(()=>localStorage.setItem('courseheat-compare',JSON.stringify(compare)),[compare]);
+ const filtered=useMemo(()=>filterCourses(courses,filters),[courses,filters]); const selected=courses.find(c=>c.id===selectedCourseId)??filtered[0]??courses[0];
+ const pick=(c:Course)=>setSelectedCourseId(c.id); const toggleSaved=(id:string)=>setSaved(x=>x.includes(id)?x.filter(v=>v!==id):[...x,id]); const toggleCompare=(id:string)=>setCompare(x=>x.includes(id)?x.filter(v=>v!==id):x.length<3?[...x,id]:x);
+ const reset=()=>{const original=resetSavedCourses();setCourses(original);setFilters(defaultFilters);setSelectedCourseId(original[0].id)};
+ const openSaved=(c:Course)=>{pick(c);setScreen('explore')};
+ return <><Header screen={screen} onNavigate={setScreen} savedCount={saved.length} compareCount={compare.length}/><main className="page-shell app-shell">
+  {screen==='overview'&&<OverviewScreen courses={courses} onNavigate={setScreen} onSelect={pick}/>} 
+  {screen==='explore'&&<section className="screen-section"><div className="screen-heading"><div><p className="eyebrow">Course discovery</p><h1>Explore the catalog</h1><p>Filter the signal. Find the classes that fit your goals and your week.</p></div><button className="button ghost compact" onClick={reset}><RotateCcw size={15}/> Reset data</button></div><Filters courses={courses} filters={filters} onChange={setFilters}/><StatCards courses={filtered}/><div className="dashboard-layout"><div className="main-column"><HeatmapGrid courses={filtered} metric={filters.metric} selectedCourseId={selected.id} onSelectCourse={pick}/><div className="selection-actions card"><div><strong>{selected.code}</strong><span>Add this course to your shortlist or comparison.</span></div><button className={`button ghost compact ${saved.includes(selected.id)?'is-active':''}`} onClick={()=>toggleSaved(selected.id)}><Bookmark size={16} fill={saved.includes(selected.id)?'currentColor':'none'}/>{saved.includes(selected.id)?'Saved':'Save'}</button><button className={`button ghost compact ${compare.includes(selected.id)?'is-active':''}`} onClick={()=>toggleCompare(selected.id)}><GitCompareArrows size={16}/>{compare.includes(selected.id)?'Added':'Compare'}</button></div><CourseTable courses={filtered} selectedCourseId={selected.id} onSelectCourse={pick}/><InsightsPanel courses={filtered}/></div><CourseDetail course={selected}/></div></section>}
+  {screen==='compare'&&<CompareScreen courses={courses} ids={compare} onToggle={toggleCompare} onExplore={()=>setScreen('explore')}/>} 
+  {screen==='saved'&&<SavedScreen courses={courses.filter(c=>saved.includes(c.id))} onRemove={toggleSaved} onOpen={openSaved} onExplore={()=>setScreen('explore')}/>} 
+  {screen==='review'&&<section className="screen-section narrow-screen"><div className="screen-heading"><div><p className="eyebrow">Help the next student</p><h1>Share your experience</h1><p>Specific, honest feedback makes the whole catalog more useful.</p></div></div><label className="course-picker card">Reviewing <select value={selected.id} onChange={e=>setSelectedCourseId(e.target.value)}>{courses.map(c=><option value={c.id} key={c.id}>{c.code} — {c.title}</option>)}</select></label><ReviewForm selectedCourse={selected} onSubmit={(form:NewReviewForm)=>setCourses(x=>x.map(c=>c.id===selected.id?addReviewToCourse(c,form):c))}/></section>}
+ </main><Footer/></>;
 }
-
 export default App;
