@@ -737,3 +737,21 @@ td span {
     font-size: clamp(2.35rem, 15vw, 4rem);
   }
 }
+
+/* Keep the detail panel in document flow before the two columns become cramped. */
+.main-column,
+.course-detail,
+.panel {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .course-detail {
+    position: static;
+    width: 100%;
+  }
+}
